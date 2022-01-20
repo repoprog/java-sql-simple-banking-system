@@ -1,10 +1,11 @@
 package banking;
 
 
+import java.sql.*;
+
 public class CreditCard {
-    private String cardNumber;
-    private String pin;
-    private BankAccount account;
+    private final String cardNumber;
+    private final String pin;
 
     public CreditCard() {
         this.cardNumber = generateCardNumber();
@@ -24,16 +25,35 @@ public class CreditCard {
         String bankIdNumber = "400000";
         StringBuilder accountID = new StringBuilder();
         int remainingDigits = 9;
-        int count = 0;
-        while (count < remainingDigits) {
-            accountID.append((int) (Math.random() * 10));
-            count++;
-        }
+
+        do {
+            while (accountID.length() < remainingDigits) {
+                accountID.append((int) (Math.random() * 10));
+            }
+        } while (!isAccIdUnique(String.valueOf(accountID)));
+
         String numberMinusLast = bankIdNumber + accountID;
         return bankIdNumber + accountID + getCheckSum(numberMinusLast);
     }
 
-    private String getCheckSum(String numberMinusLast) { // LUHN ALGORITHM
+    public boolean isAccIdUnique(String accountID) {
+        String searchIdSQL = "SELECT number FROM card " +
+                "WHERE number LIKE '% ? %'";
+        try (Connection con = DriverManager.getConnection(BankAccount.getDataBase());
+             PreparedStatement searchId = con.prepareStatement(searchIdSQL)) {
+            searchId.setString(1, accountID);
+            ResultSet rs = searchId.executeQuery();
+            if (rs.next()) {
+                return false;
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return true;
+    }
+
+    // Generate checksum for cardNumber using LUHN ALGORITHM
+    public static String getCheckSum(String numberMinusLast) {
         int sum = 0;
         String[] partNumber = numberMinusLast.split("");
         int[] digits = new int[partNumber.length];
@@ -53,10 +73,8 @@ public class CreditCard {
     public String generatePin() {
         StringBuilder pinNumber = new StringBuilder();
         int digits = 4;
-        int count = 0;
-        while (count < digits) {
+        while (pinNumber.length() < digits) {
             pinNumber.append((int) (Math.random() * 10));
-            count++;
         }
         return pinNumber.toString();
     }

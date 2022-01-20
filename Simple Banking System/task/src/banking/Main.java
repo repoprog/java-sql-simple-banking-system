@@ -1,15 +1,19 @@
 package banking;
 
-import java.util.ArrayList;
+import java.sql.*;
+
 import java.util.Scanner;
 
 public class Main {
+
     private static final Scanner scanner = new Scanner(System.in);
-    private static BankAccount account;
+    static boolean quit = false;
 
     public static void main(String[] args) {
+        String fileName =   args[0].equals("-fileName") ? args[1] : null;
+        createNewTable(fileName);
+        BankAccount.setDataBase(fileName);
 
-        boolean quit = false;
         while (!quit) {
             showMenu();
             String choice = scanner.nextLine();
@@ -29,6 +33,22 @@ public class Main {
         }
     }
 
+    public static void createNewTable(String fileName) {
+        String url = "jdbc:sqlite:" + fileName;
+        String sql = "CREATE TABLE IF NOT EXISTS card (" +
+                "id INTEGER PRIMARY KEY," +
+                "number TEXT," +
+                "pin TEXT," +
+                "balance INTEGER DEFAULT 0 );";
+        try (Connection con = DriverManager.getConnection(url);
+             Statement statement = con.createStatement()) {
+
+            statement.execute(sql);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
     public static void showMenu() {
         System.out.println("1. Create an account\n" +
                 "2. Log into account\n" +
@@ -36,7 +56,7 @@ public class Main {
     }
 
     public static void createAccount() {
-        account = new BankAccount();
+        BankAccount account = new BankAccount();
     }
 
     public static void login() {
@@ -46,7 +66,7 @@ public class Main {
         String enteredPin;
         System.out.println("Enter your PIN: ");
         enteredPin = scanner.nextLine();
-        account.isAuthorised(enteredCard, enteredPin);
+        BankAccount.isAuthorised(enteredCard, enteredPin);
 
     }
 }
